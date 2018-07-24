@@ -8,6 +8,8 @@ environment:
   sdk: '>=2.0.0-dev.58.0 <3.0.0'
 
 dependencies:
+  meta: ^1.1.6
+  crypto: ^2.0.6
   http_client: ^0.4.4+1
   xml: ^3.0.1
 
