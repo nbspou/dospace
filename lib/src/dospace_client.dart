@@ -21,116 +21,32 @@ class ClientException implements Exception {
 }
 
 class Client {
-  http.Client _httpClient;
   final String region;
   final String accessKey;
   final String secretKey;
+  final String service;
   final String endpointUrl;
+
+  @protected final http.Client httpClient;
+  
   Client({
     @required this.region,
     @required this.accessKey,
     @required this.secretKey,
-    @required this.endpointUrl,
+    @required this.service,
+    String endpointUrl,
     http.Client httpClient
-  }) {
-    assert(region != null);
-    assert(accessKey != null);
-    assert(secretKey != null);
-    assert(endpointUrl != null);
-    _httpClient = httpClient == null ? new http.ConsoleClient() : httpClient;
+  }) : this.endpointUrl = (endpointUrl == null) ? "https://${region}.digitaloceanspaces.com" : endpointUrl,
+       this.httpClient = httpClient == null ? new http.ConsoleClient() : httpClient {
+    assert(this.region != null);
+    assert(this.accessKey != null);
+    assert(this.secretKey != null);
   }
 
-  /// List all existing buckets in a region.
-  /// https://developers.digitalocean.com/documentation/spaces/#list-all-buckets
-  Future<List<String>> listAllBuckets() async {
-    xml.XmlDocument doc = await _getUri(Uri.parse(endpointUrl + '/'));
-    List<String> res = new List<String>();
-    for (xml.XmlElement root in doc.findElements('ListAllMyBucketsResult')) {
-      for (xml.XmlElement buckets in root.findElements('Buckets')) {
-        for (xml.XmlElement bucket in buckets.findElements('Bucket')) {
-          for (xml.XmlElement name in bucket.findElements('Name')) {
-            res.add(name.text);
-          }
-        }
-      }
-    }
-    return res;
-  }
-
-  /// List a Bucket's Contents.
-  /// TODO: Manage markers and provide async iterator interface
-  /// https://developers.digitalocean.com/documentation/spaces/#list-bucket-contents
-  Future<ListBucketResult> listBucketContents({
-    String delimiter, String marker, String maxKeys, String prefix
-  }) async {
-    Uri uri = Uri.parse(endpointUrl + '/');
-    Map<String, dynamic> params;
-    if (delimiter != null) params['delimiter'] = delimiter;
-    if (marker != null) params['marker'] = marker;
-    if (maxKeys != null) params['max-keys'] = maxKeys;
-    if (prefix != null) params['prefix'] = prefix;
-    uri = uri.replace(queryParameters: params);
-    xml.XmlDocument doc = await _getUri(uri);
-    String name;
-    String prefix_;
-    String marker_;
-    String nextMarker;
-    String maxKeys_;
-    bool isTruncated;
-    List<ListBucketContents> contents = new List<ListBucketContents>();
-    for (xml.XmlElement root in doc.findElements('ListBucketResult')) {
-      for (xml.XmlNode node in root.children) {
-        if (node is xml.XmlElement) {
-          xml.XmlElement ele = node;
-          switch ('${ele.name}') {
-            case "Name": print(ele.text); name = ele.text; break;
-            case "Prefix": prefix_ = ele.text; break;
-            case "Marker": marker_ = ele.text; break;
-            case "NextMarker": nextMarker = ele.text; break;
-            case "MaxKeys": maxKeys_ = ele.text; break;
-            case "IsTruncated": isTruncated = ele.text.toLowerCase() != "false" && ele.text != "0"; break;
-            case "Contents":
-              String key;
-              DateTime lastModifiedUtc;
-              String eTag;
-              int size;
-              for (xml.XmlNode node in ele.children) {
-                if (node is xml.XmlElement) {
-                  xml.XmlElement ele = node;
-                  switch ('${ele.name}') {
-                    case "Key": key = ele.text; break;
-                    case "LastModified": lastModifiedUtc = DateTime.parse(ele.text); break;
-                    case "ETag": eTag = ele.text; break;
-                    case "Size": size = int.parse(ele.text); break;
-                  }
-                }
-              }
-              contents.add(new ListBucketContents(
-                key: key, 
-                lastModifiedUtc: lastModifiedUtc,
-                eTag: eTag,
-                size: size,
-              ));  
-              break;
-          }
-        }
-      }
-    }
-    return new ListBucketResult(
-      name: name,
-      prefix: prefix_,
-      marker: marker_,
-      nextMarker: nextMarker,
-      maxKeys: maxKeys_,
-      isTruncated: isTruncated,
-      contents: contents,
-    );
-  }
-
-  Future<xml.XmlDocument> _getUri(Uri uri) async {
+  @protected Future<xml.XmlDocument> getUri(Uri uri) async {
     http.Request request = new http.Request('GET', uri, headers: new http.Headers());
-    _signRequest(request);
-    http.Response response = await _httpClient.send(request);
+    signRequest(request);
+    http.Response response = await httpClient.send(request);
     BytesBuilder builder = new BytesBuilder(copy: false);
     await response.body.forEach(builder.add);
     String body = utf8.decode(builder.toBytes());
@@ -155,19 +71,20 @@ class Client {
     return res;
   }
 
-  void _signRequest(http.Request request) {
+  @protected void signRequest(http.Request request, { Digest contentSha256 }) {
     // Build canonical request
     String httpMethod = request.method;
     String canonicalURI = request.uri.path;
     String host = request.uri.host;
-    String service = 's3';
+    // String service = 's3';
 
     DateTime date = new DateTime.now().toUtc();
     String dateIso8601 = date.toIso8601String();
     dateIso8601 = dateIso8601.substring(0, dateIso8601.indexOf('.')).replaceAll(':', '').replaceAll('-', '') + 'Z';
     String dateYYYYMMDD = date.year.toString().padLeft(4, '0') + date.month.toString().padLeft(2, '0') + date.day.toString().padLeft(2, '0');
 
-    Digest hashedPayload = sha256.convert(request.bodyBytes == null ? utf8.encode('') : request.bodyBytes); // TODO: Hashed payload bodyStream
+    Digest hashedPayload = contentSha256 != null ? contentSha256
+      : (sha256.convert(request.bodyBytes == null ? utf8.encode('') : request.bodyBytes)); // TODO: Hashed payload bodyStream
 
     // Build canonical query string
     Map<String, String> queryParameters = request.uri.queryParameters;
