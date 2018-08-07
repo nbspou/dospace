@@ -23,6 +23,9 @@ main() async {
        print('key: ${content.key}');
     }
   }
+  String etag = await spaces.bucket('example').uploadFile(
+    'README.md', 'README.md', 'text/plain', dospace.Permissions.Public);
+  print('upload: $etag');
   print('done');
 }
 ```
