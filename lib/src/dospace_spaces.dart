@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -11,26 +10,33 @@ import 'dospace_client.dart';
 import 'dospace_bucket.dart';
 
 class Spaces extends Client {
-  Spaces({
-    @required String region,
-    @required String accessKey,
-    @required String secretKey,
-    String endpointUrl,
-    http.Client httpClient
-  }) : super(region: region, accessKey: accessKey, secretKey: secretKey, service: "s3", endpointUrl: endpointUrl, httpClient: httpClient) {
+  Spaces(
+      {@required String region,
+      @required String accessKey,
+      @required String secretKey,
+      String endpointUrl,
+      http.Client httpClient})
+      : super(
+            region: region,
+            accessKey: accessKey,
+            secretKey: secretKey,
+            service: "s3",
+            endpointUrl: endpointUrl,
+            httpClient: httpClient) {
     // ...
   }
 
   Bucket bucket(String bucket) {
     if (endpointUrl == "https://${region}.digitaloceanspaces.com") {
       return new Bucket(
-        region: region,
-        accessKey: accessKey,
-        secretKey: secretKey,
-        endpointUrl: "https://${bucket}.${region}.digitaloceanspaces.com",
-        httpClient: httpClient);
+          region: region,
+          accessKey: accessKey,
+          secretKey: secretKey,
+          endpointUrl: "https://${bucket}.${region}.digitaloceanspaces.com",
+          httpClient: httpClient);
     } else {
-      throw Exception("Endpoint URL not supported. Create Bucket client manually.");
+      throw Exception(
+          "Endpoint URL not supported. Create Bucket client manually.");
     }
   }
 

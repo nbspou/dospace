@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:dospace/dospace.dart' as dospace;
@@ -12,12 +11,13 @@ main() async {
   for (String name in await spaces.listAllBuckets()) {
     print('bucket: ${name}');
     dospace.Bucket bucket = spaces.bucket(name);
-    await for (dospace.BucketContent content in bucket.listContents(maxKeys: 3)) {
-       print('key: ${content.key}');
+    await for (dospace.BucketContent content
+        in bucket.listContents(maxKeys: 3)) {
+      print('key: ${content.key}');
     }
   }
   String etag = await spaces.bucket('example').uploadFile(
-    'README.md', 'README.md', 'text/plain', dospace.Permissions.Public);
+      'README.md', 'README.md', 'text/plain', dospace.Permissions.Public);
   print('upload: $etag');
   print('done');
 }

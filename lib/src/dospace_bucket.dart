@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -16,27 +15,34 @@ enum Permissions {
 }
 
 class Bucket extends Client {
-  Bucket({
-    @required String region,
-    @required String accessKey,
-    @required String secretKey,
-    String endpointUrl,
-    http.Client httpClient
-  }) : super(region: region, accessKey: accessKey, secretKey: secretKey, service: "s3", endpointUrl: endpointUrl, httpClient: httpClient) {
+  Bucket(
+      {@required String region,
+      @required String accessKey,
+      @required String secretKey,
+      String endpointUrl,
+      http.Client httpClient})
+      : super(
+            region: region,
+            accessKey: accessKey,
+            secretKey: secretKey,
+            service: "s3",
+            endpointUrl: endpointUrl,
+            httpClient: httpClient) {
     // ...
   }
 
   void bucket(String bucket) {
     if (endpointUrl == "https://${region}.digitaloceanspaces.com") {
-      
     } else {
-      throw Exception("Endpoint URL not supported. Create Bucket client manually.");
+      throw Exception(
+          "Endpoint URL not supported. Create Bucket client manually.");
     }
   }
 
   /// List the Bucket's Contents.
   /// https://developers.digitalocean.com/documentation/spaces/#list-bucket-contents
-  Stream<BucketContent> listContents({ String delimiter, String prefix, int maxKeys }) async* {
+  Stream<BucketContent> listContents(
+      {String delimiter, String prefix, int maxKeys}) async* {
     bool isTruncated;
     String marker;
     do {
@@ -56,8 +62,13 @@ class Bucket extends Client {
           if (node is xml.XmlElement) {
             xml.XmlElement ele = node;
             switch ('${ele.name}') {
-              case "NextMarker": marker = ele.text; break;
-              case "IsTruncated": isTruncated = ele.text.toLowerCase() != "false" && ele.text != "0"; break;
+              case "NextMarker":
+                marker = ele.text;
+                break;
+              case "IsTruncated":
+                isTruncated =
+                    ele.text.toLowerCase() != "false" && ele.text != "0";
+                break;
               case "Contents":
                 String key;
                 DateTime lastModifiedUtc;
@@ -67,15 +78,23 @@ class Bucket extends Client {
                   if (node is xml.XmlElement) {
                     xml.XmlElement ele = node;
                     switch ('${ele.name}') {
-                      case "Key": key = ele.text; break;
-                      case "LastModified": lastModifiedUtc = DateTime.parse(ele.text); break;
-                      case "ETag": eTag = ele.text; break;
-                      case "Size": size = int.parse(ele.text); break;
+                      case "Key":
+                        key = ele.text;
+                        break;
+                      case "LastModified":
+                        lastModifiedUtc = DateTime.parse(ele.text);
+                        break;
+                      case "ETag":
+                        eTag = ele.text;
+                        break;
+                      case "Size":
+                        size = int.parse(ele.text);
+                        break;
                     }
                   }
                 }
                 yield new BucketContent(
-                  key: key, 
+                  key: key,
                   lastModifiedUtc: lastModifiedUtc,
                   eTag: eTag,
                   size: size,
@@ -89,12 +108,15 @@ class Bucket extends Client {
   }
 
   /// Uploads file. Returns Etag.
-  Future<String> uploadFile(String key, String filePath, String contentType, Permissions permissions, { Map<String, String> meta }) async {
+  Future<String> uploadFile(
+      String key, String filePath, String contentType, Permissions permissions,
+      {Map<String, String> meta}) async {
     var input = new File(filePath);
     int contentLength = await input.length();
     Digest contentSha256 = await sha256.bind(input.openRead()).first;
     String uriStr = endpointUrl + '/' + key;
-    http.Request request = new http.Request('PUT', Uri.parse(uriStr), headers: new http.Headers(), body: input.openRead());
+    http.Request request = new http.Request('PUT', Uri.parse(uriStr),
+        headers: new http.Headers(), body: input.openRead());
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
         request.headers.add("x-amz-meta-${me.key}", me.value);
@@ -111,7 +133,8 @@ class Bucket extends Client {
     await response.body.forEach(builder.add);
     String body = utf8.decode(builder.toBytes()); // Should be empty when OK
     if (response.statusCode != 200) {
-      throw new ClientException(response.statusCode, response.reasonPhrase, response.headers.toSimpleMap(), body);
+      throw new ClientException(response.statusCode, response.reasonPhrase,
+          response.headers.toSimpleMap(), body);
     }
     String etag = response.headers['etag'].first;
     return etag;
