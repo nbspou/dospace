@@ -10,6 +10,11 @@ import 'package:xml/xml.dart' as xml;
 import 'dospace_client.dart';
 import 'dospace_results.dart';
 
+enum Permissions {
+  Private,
+  Public,
+}
+
 class Bucket extends Client {
   Bucket({
     @required String region,
@@ -82,6 +87,38 @@ class Bucket extends Client {
       }
     } while (isTruncated);
   }
+
+  /// Uploads file. Returns Etag.
+  Future<String> uploadFile(String key, String filePath, String contentType, Permissions permissions, { Map<String, String> meta }) async {
+    var input = new File(filePath);
+    int contentLength = await input.length();
+    Digest contentSha256 = await sha256.bind(input.openRead()).first;
+    String uriStr = endpointUrl + '/' + key;
+    http.Request request = new http.Request('PUT', Uri.parse(uriStr), headers: new http.Headers(), body: input.openRead());
+    if (meta != null) {
+      for (MapEntry<String, String> me in meta.entries) {
+        request.headers.add("x-amz-meta-${me.key}", me.value);
+      }
+    }
+    if (permissions == Permissions.Public) {
+      request.headers.add('x-amz-acl', 'public-read');
+    }
+    request.headers.add('Content-Length', contentLength);
+    request.headers.add('Content-Type', contentType);
+    signRequest(request, contentSha256: contentSha256);
+    http.Response response = await httpClient.send(request);
+    BytesBuilder builder = new BytesBuilder(copy: false);
+    await response.body.forEach(builder.add);
+    String body = utf8.decode(builder.toBytes()); // Should be empty when OK
+    if (response.statusCode != 200) {
+      throw new ClientException(response.statusCode, response.reasonPhrase, response.headers.toSimpleMap(), body);
+    }
+    String etag = response.headers['etag'].first;
+    return etag;
+  }
+
+  // PreparedUploadRequest
+  // PreSignedRequest
 
   /*
   Map<String, String> preSignUpload(String key, int contentLength, String contentType, Digest contentSha256, { Map<String, String> meta }) {
