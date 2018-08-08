@@ -6,8 +6,6 @@ import 'package:crypto/crypto.dart';
 import 'package:http_client/console.dart' as http;
 import 'package:xml/xml.dart' as xml;
 
-import 'dospace_results.dart';
-
 class ClientException implements Exception {
   final int statusCode;
   final String reasonPhrase;

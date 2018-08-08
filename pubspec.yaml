@@ -1,6 +1,6 @@
 name: dospace
 description: Client library to interact with the DigitalOcean Spaces API. Same API as Amazon AWS S3.
-version: 0.9.4
+version: 0.9.5
 homepage: https://github.com/nbspou/dospace
 author: NO-BREAK SPACE OÜ <support@no-break.space>
 
@@ -8,7 +8,7 @@ environment:
   sdk: '>=2.0.0-dev.58.0 <3.0.0'
 
 dependencies:
-  meta: ^1.1.6
+  meta: ^1.1.5
   crypto: ^2.0.6
   http_client: ^0.4.4+1
   xml: ^3.0.1
