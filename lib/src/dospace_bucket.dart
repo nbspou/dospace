@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:meta/meta.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http_client/console.dart' as http;
@@ -128,6 +129,38 @@ class Bucket extends Client {
     request.headers.add('Content-Length', contentLength);
     request.headers.add('Content-Type', contentType);
     signRequest(request, contentSha256: contentSha256);
+    http.Response response = await httpClient.send(request);
+    BytesBuilder builder = new BytesBuilder(copy: false);
+    await response.body.forEach(builder.add);
+    String body = utf8.decode(builder.toBytes()); // Should be empty when OK
+    if (response.statusCode != 200) {
+      throw new ClientException(response.statusCode, response.reasonPhrase,
+          response.headers.toSimpleMap(), body);
+    }
+    String etag = response.headers['etag'].first;
+    return etag;
+  }
+
+  /// Uploads data from memory. Returns Etag.
+  Future<String> uploadData(
+      String key, Uint8List data, String contentType, Permissions permissions,
+      { Map<String, String> meta, Digest contentSha256 }) async {
+    int contentLength = await data.length;
+    Digest contentSha256_ = contentSha256 != null ? contentSha256 : await sha256.convert(data);
+    String uriStr = endpointUrl + '/' + key;
+    http.Request request = new http.Request('PUT', Uri.parse(uriStr),
+        headers: new http.Headers(), body: data);
+    if (meta != null) {
+      for (MapEntry<String, String> me in meta.entries) {
+        request.headers.add("x-amz-meta-${me.key}", me.value);
+      }
+    }
+    if (permissions == Permissions.public) {
+      request.headers.add('x-amz-acl', 'public-read');
+    }
+    request.headers.add('Content-Length', contentLength);
+    request.headers.add('Content-Type', contentType);
+    signRequest(request, contentSha256: contentSha256_);
     http.Response response = await httpClient.send(request);
     BytesBuilder builder = new BytesBuilder(copy: false);
     await response.body.forEach(builder.add);
