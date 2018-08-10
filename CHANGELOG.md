@@ -1,3 +1,7 @@
+## 0.10.6
+
+- Fixed enum case
+
 ## 0.9.5
 
 - Adjust version dependency

@@ -10,8 +10,8 @@ import 'dospace_client.dart';
 import 'dospace_results.dart';
 
 enum Permissions {
-  Private,
-  Public,
+  private,
+  public,
 }
 
 class Bucket extends Client {
@@ -122,7 +122,7 @@ class Bucket extends Client {
         request.headers.add("x-amz-meta-${me.key}", me.value);
       }
     }
-    if (permissions == Permissions.Public) {
+    if (permissions == Permissions.public) {
       request.headers.add('x-amz-acl', 'public-read');
     }
     request.headers.add('Content-Length', contentLength);

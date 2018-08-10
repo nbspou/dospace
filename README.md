@@ -24,7 +24,7 @@ main() async {
     }
   }
   String etag = await spaces.bucket('example').uploadFile(
-    'README.md', 'README.md', 'text/plain', dospace.Permissions.Public);
+    'README.md', 'README.md', 'text/plain', dospace.Permissions.public);
   print('upload: $etag');
   print('done');
 }
