@@ -77,7 +77,7 @@ class Client {
   }
 
   @protected
-  void signRequest(http.Request request, {Digest contentSha256}) {
+  String signRequest(http.Request request, {Digest contentSha256, bool preSignedUrl = false, int expires = 900}) {
     // Build canonical request
     String httpMethod = request.method;
     String canonicalURI = request.uri.path;
@@ -101,22 +101,18 @@ class Client {
             ? utf8.encode('')
             : request.bodyBytes)); // TODO: Hashed payload bodyStream
 
-    // Build canonical query string
-    Map<String, String> queryParameters = request.uri.queryParameters;
-    Map<String, String> queryCase = queryParameters.map((s, t) => new MapEntry<String, String>(s.toLowerCase(), s));
-    List<String> queryKeys = queryCase.keys.toList()
-      ..sort();
-    String canonicalQueryString = queryKeys
-        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[s])}')
-        .join('&');
+    String credential =
+        '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
 
     // Build canonical headers string
     Map<String, List<String>> headers = new Map<String, List<String>>();
-    request.headers.add('x-amz-date', dateIso8601); // Set date in header
-    request.headers.add(
-        'x-amz-content-sha256', '$hashedPayload'); // Set payload hash in header
-    request.headers.keys.forEach(
-        (String name) => (headers[name.toLowerCase()] = request.headers[name]));
+    if (!preSignedUrl) {
+      request.headers.add('x-amz-date', dateIso8601); // Set date in header
+      request.headers.add(
+          'x-amz-content-sha256', '$hashedPayload'); // Set payload hash in header
+      request.headers.keys.forEach(
+          (String name) => (headers[name.toLowerCase()] = request.headers[name]));
+    }
     headers['host'] = [host]; // Host is a builtin header
     List<String> headerNames = headers.keys.toList()..sort();
     String canonicalHeaders = headerNames
@@ -125,6 +121,23 @@ class Client {
         .join();
 
     String signedHeaders = headerNames.join(';');
+
+    // Build canonical query string
+    Map<String, String> queryParameters = request.uri.queryParameters;
+    if (preSignedUrl) {
+      // Add query parameters
+      queryParameters['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256';
+      queryParameters['X-Amz-Credential'] = credential;
+      queryParameters['X-Amz-Date'] = dateIso8601;
+      queryParameters['X-Amz-Expires'] = expires.toString();
+      queryParameters['X-Amz-SignedHeaders'] = signedHeaders;
+    }
+    Map<String, String> queryCase = queryParameters.map((s, t) => new MapEntry<String, String>(s.toLowerCase(), s));
+    List<String> queryKeys = queryCase.keys.toList()
+      ..sort();
+    String canonicalQueryString = queryKeys
+        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[s])}')
+        .join('&');
 
     // Sign headers
     String canonicalRequest =
@@ -150,11 +163,15 @@ class Client {
     Digest signature =
         new Hmac(sha256, signingKey.bytes).convert(utf8.encode(stringToSign));
 
-    String credential =
-        '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
-
     // Set signature in header
     request.headers.add('Authorization',
         'AWS4-HMAC-SHA256 Credential=${credential}, SignedHeaders=${signedHeaders}, Signature=$signature');
+
+    if (preSignedUrl) {
+      queryParameters['X-Amz-Signature'] = '$signature';
+      return request.uri.replace(queryParameters: queryParameters).toString();
+    } else {
+      return null;
+    }
   }
 }
