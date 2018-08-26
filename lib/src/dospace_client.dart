@@ -77,7 +77,7 @@ class Client {
   }
 
   @protected
-  String signRequest(http.Request request, {Digest contentSha256, bool preSignedUrl = false, int expires = 900}) {
+  String signRequest(http.Request request, {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
     // Build canonical request
     String httpMethod = request.method;
     String canonicalURI = request.uri.path;
@@ -95,11 +95,10 @@ class Client {
         date.month.toString().padLeft(2, '0') +
         date.day.toString().padLeft(2, '0');
 
-    Digest hashedPayload = contentSha256 != null
-        ? contentSha256
-        : (sha256.convert(request.bodyBytes == null
-            ? utf8.encode('')
-            : request.bodyBytes)); // TODO: Hashed payload bodyStream
+    /*dateIso8601 = "20130524T000000Z";
+    dateYYYYMMDD = "20130524";
+    hashedPayload = null;*/
+    String hashedPayloadStr = contentSha256 == null ? 'UNSIGNED-PAYLOAD' : '$contentSha256';
 
     String credential =
         '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
@@ -108,8 +107,10 @@ class Client {
     Map<String, List<String>> headers = new Map<String, List<String>>();
     if (!preSignedUrl) {
       request.headers.add('x-amz-date', dateIso8601); // Set date in header
-      request.headers.add(
-          'x-amz-content-sha256', '$hashedPayload'); // Set payload hash in header
+      if (contentSha256 != null) {
+        request.headers.add(
+            'x-amz-content-sha256', hashedPayloadStr); // Set payload hash in header
+      }
       request.headers.keys.forEach(
           (String name) => (headers[name.toLowerCase()] = request.headers[name]));
     }
@@ -123,25 +124,33 @@ class Client {
     String signedHeaders = headerNames.join(';');
 
     // Build canonical query string
-    Map<String, String> queryParameters = request.uri.queryParameters;
+    Map<String, String> queryParameters = new Map<String, String>()..addAll(request.uri.queryParameters);
     if (preSignedUrl) {
       // Add query parameters
       queryParameters['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256';
       queryParameters['X-Amz-Credential'] = credential;
       queryParameters['X-Amz-Date'] = dateIso8601;
       queryParameters['X-Amz-Expires'] = expires.toString();
+      if (contentSha256 != null) {
+        queryParameters['X-Amz-Content-Sha256'] = hashedPayloadStr;
+      }
       queryParameters['X-Amz-SignedHeaders'] = signedHeaders;
     }
     Map<String, String> queryCase = queryParameters.map((s, t) => new MapEntry<String, String>(s.toLowerCase(), s));
     List<String> queryKeys = queryCase.keys.toList()
       ..sort();
     String canonicalQueryString = queryKeys
-        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[s])}')
+        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[queryCase[s]])}')
         .join('&');
+
+    if (preSignedUrl) {
+      // TODO: Specific payload upload with pre-signed URL not supported on DigitalOcean?
+      hashedPayloadStr = 'UNSIGNED-PAYLOAD';
+    }
 
     // Sign headers
     String canonicalRequest =
-        '${httpMethod}\n${canonicalURI}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n$hashedPayload';
+        '${httpMethod}\n${canonicalURI}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n$hashedPayloadStr';
     // print('\n>>>>>> canonical request \n' + canonicalRequest + '\n<<<<<<\n');
 
     Digest canonicalRequestHash = sha256.convert(utf8.encode(

@@ -173,40 +173,21 @@ class Bucket extends Client {
     return etag;
   }
 
-  // PreparedUploadRequest
-  // PreSignedRequest
-
-  /*
-  Map<String, String> preSignUpload(String key, int contentLength, String contentType, Digest contentSha256, { Map<String, String> meta }) {
-    Uri uri = Uri.parse(endpointUrl + '/' + key);
-    http.Request request = new http.Request('PUT', uri, headers: new http.Headers());
-    Map<String, String> res;
+  String preSignUpload(String key, {int contentLength, String contentType, Digest contentSha256, int expires = 900, Map<String, String> meta }) {
+    String uriStr = endpointUrl + '/' + key;
+    Uri uriBase = Uri.parse(uriStr);
+    Map<String, String> queryParameters = new Map<String, String>();
+    http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
+        headers: new http.Headers());
+    if (contentLength != null)
+      request.headers.add('Content-Length', contentLength);
+    if (contentType != null)
+      request.headers.add('Content-Type', contentType);
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
-        res["x-amz-meta-${me.key}"] = me.value;
-        request.headers.add("x-amz-meta-${me.key}", me.value);
+        queryParameters["x-amz-meta-${me.key}"] = me.value;
       }
     }
-    request.headers.add('Content-Length', contentLength);
-    request.headers.add('Content-Type', contentType);
-    signRequest(request);
-    res['x-amz-date'] = request.headers['x-amz-date'][0];
-    // res['x-amz-content-sha256'] = request.headers['x-amz-content-sha256''][0];
-    res['Authorization'] = request.headers['Authorization'][0];
+    return signRequest(request, contentSha256: contentSha256, expires: expires, preSignedUrl: true);
   }
-
-  // static preparePreSignedUpload() // get contentLength, contentType, contentSha256
-
-  static Future<void> uploadPreSigned(Uri uri, String filePath, Map<String, String> signHeaders) async {
-    http.Client client = new http.ConsoleClient();
-    http.Request request = new http.Request('PUT', uri, headers: new http.Headers());
-    for (MapEntry<String, String> me in signHeaders.entries) {
-      request.headers.add(me.key, me.value);
-    }
-    // add 'x-amz-content-sha256'
-    // add 'Content-Length'
-    // add 'Content-Type'
-    // request.bodyStream =
-  }
-  */
 }
