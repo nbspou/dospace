@@ -103,10 +103,11 @@ class Client {
 
     // Build canonical query string
     Map<String, String> queryParameters = request.uri.queryParameters;
-    List<String> queryKeys = queryParameters.keys.toList()
-      ..sort(); // TODO: Ordinal sort
+    Map<String, String> queryCase = queryParameters.map((s, t) => new MapEntry<String, String>(s.toLowerCase(), s));
+    List<String> queryKeys = queryCase.keys.toList()
+      ..sort();
     String canonicalQueryString = queryKeys
-        .map((s) => '${_uriEncode(s)}=${_uriEncode(queryParameters[s])}')
+        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[s])}')
         .join('&');
 
     // Build canonical headers string
