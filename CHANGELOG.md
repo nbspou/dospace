@@ -1,3 +1,7 @@
+## 0.10.7
+
+- Add support for pre-signed uploads
+
 ## 0.10.6
 
 - Fixed enum case
