@@ -173,7 +173,7 @@ class Bucket extends Client {
     return etag;
   }
 
-  String preSignUpload(String key, {int contentLength, String contentType, Digest contentSha256, int expires = 900, Map<String, String> meta }) {
+  String preSignUpload(String key, {int contentLength, String contentType, Digest contentSha256, Permissions permissions = Permissions.private, int expires = 900, Map<String, String> meta }) {
     String uriStr = endpointUrl + '/' + key;
     Uri uriBase = Uri.parse(uriStr);
     Map<String, String> queryParameters = new Map<String, String>();
@@ -185,8 +185,11 @@ class Bucket extends Client {
       request.headers.add('Content-Type', contentType);
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
-        queryParameters["x-amz-meta-${me.key}"] = me.value;
+        queryParameters["X-Amz-Meta-${me.key}"] = me.value;
       }
+    }
+    if (permissions == Permissions.public) {
+      queryParameters['X-Amz-Acl'] = 'public-read';
     }
     return signRequest(request, contentSha256: contentSha256, expires: expires, preSignedUrl: true);
   }
