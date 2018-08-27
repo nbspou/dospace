@@ -177,12 +177,6 @@ class Bucket extends Client {
     String uriStr = endpointUrl + '/' + key;
     Uri uriBase = Uri.parse(uriStr);
     Map<String, String> queryParameters = new Map<String, String>();
-    http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
-        headers: new http.Headers());
-    if (contentLength != null)
-      request.headers.add('Content-Length', contentLength);
-    if (contentType != null)
-      request.headers.add('Content-Type', contentType);
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
         queryParameters["X-Amz-Meta-${me.key}"] = me.value;
@@ -191,6 +185,12 @@ class Bucket extends Client {
     if (permissions == Permissions.public) {
       queryParameters['X-Amz-Acl'] = 'public-read';
     }
+    http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
+        headers: new http.Headers());
+    if (contentLength != null)
+      request.headers.add('Content-Length', contentLength);
+    if (contentType != null)
+      request.headers.add('Content-Type', contentType);
     return signRequest(request, contentSha256: contentSha256, expires: expires, preSignedUrl: true);
   }
 }
