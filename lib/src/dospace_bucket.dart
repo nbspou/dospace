@@ -182,15 +182,18 @@ class Bucket extends Client {
         queryParameters["x-amz-meta-${me.key}"] = me.value;
       }
     }
-    if (permissions == Permissions.public) {
+    /*if (permissions == Permissions.public) {
       queryParameters['x-amz-acl'] = 'public-read';
-    }
+    }*/ // This isn't working ?!
     http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
         headers: new http.Headers());
     if (contentLength != null)
       request.headers.add('Content-Length', contentLength);
     if (contentType != null)
       request.headers.add('Content-Type', contentType);
+    if (permissions == Permissions.public) {
+      request.headers.add('x-amz-acl', 'public-read');
+    }
     return signRequest(request, contentSha256: contentSha256, expires: expires, preSignedUrl: true);
   }
 }
