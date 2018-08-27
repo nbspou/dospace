@@ -136,11 +136,10 @@ class Client {
       }
       queryParameters['X-Amz-SignedHeaders'] = signedHeaders;
     }
-    Map<String, String> queryCase = queryParameters.map((s, t) => new MapEntry<String, String>(s.toLowerCase(), s));
-    List<String> queryKeys = queryCase.keys.toList()
+    List<String> queryKeys = queryParameters.keys.toList()
       ..sort();
     String canonicalQueryString = queryKeys
-        .map((s) => '${_uriEncode(queryCase[s])}=${_uriEncode(queryParameters[queryCase[s]])}')
+        .map((s) => '${_uriEncode(s)}=${_uriEncode(queryParameters[s])}')
         .join('&');
 
     if (preSignedUrl) {

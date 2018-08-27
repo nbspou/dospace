@@ -179,11 +179,11 @@ class Bucket extends Client {
     Map<String, String> queryParameters = new Map<String, String>();
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
-        queryParameters["X-Amz-Meta-${me.key}"] = me.value;
+        queryParameters["x-amz-meta-${me.key}"] = me.value;
       }
     }
     if (permissions == Permissions.public) {
-      queryParameters['X-Amz-Acl'] = 'public-read';
+      queryParameters['x-amz-acl'] = 'public-read';
     }
     http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
         headers: new http.Headers());
