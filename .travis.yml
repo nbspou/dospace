@@ -1,5 +1,7 @@
 language: dart
 dart:
 - stable
+before_script:
+  - gem install coveralls-lcov
 after_success:
   - coveralls-lcov coverage/lcov.info
