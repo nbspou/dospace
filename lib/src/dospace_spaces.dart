@@ -53,8 +53,8 @@ class Spaces extends Client {
   }
 
   String preSignListAllBuckets() {
-    http.Request request =
-        new http.Request('GET', Uri.parse(endpointUrl + '/'), headers: new http.Headers());
+    http.Request request = new http.Request('GET', Uri.parse(endpointUrl + '/'),
+        headers: new http.Headers());
     return signRequest(request, preSignedUrl: true);
   }
 }

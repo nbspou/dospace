@@ -1,3 +1,7 @@
+## 0.11.9
+
+- Require passing an HTTP Client in the constructor
+
 ## 0.10.7
 
 - Add support for pre-signed uploads

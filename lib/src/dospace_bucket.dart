@@ -144,9 +144,10 @@ class Bucket extends Client {
   /// Uploads data from memory. Returns Etag.
   Future<String> uploadData(
       String key, Uint8List data, String contentType, Permissions permissions,
-      { Map<String, String> meta, Digest contentSha256 }) async {
+      {Map<String, String> meta, Digest contentSha256}) async {
     int contentLength = await data.length;
-    Digest contentSha256_ = contentSha256 != null ? contentSha256 : await sha256.convert(data);
+    Digest contentSha256_ =
+        contentSha256 != null ? contentSha256 : await sha256.convert(data);
     String uriStr = endpointUrl + '/' + key;
     http.Request request = new http.Request('PUT', Uri.parse(uriStr),
         headers: new http.Headers(), body: data);
@@ -173,7 +174,13 @@ class Bucket extends Client {
     return etag;
   }
 
-  String preSignUpload(String key, {int contentLength, String contentType, Digest contentSha256, Permissions permissions = Permissions.private, int expires = 900, Map<String, String> meta }) {
+  String preSignUpload(String key,
+      {int contentLength,
+      String contentType,
+      Digest contentSha256,
+      Permissions permissions = Permissions.private,
+      int expires = 900,
+      Map<String, String> meta}) {
     String uriStr = endpointUrl + '/' + key;
     Uri uriBase = Uri.parse(uriStr);
     Map<String, String> queryParameters = new Map<String, String>();
@@ -185,15 +192,16 @@ class Bucket extends Client {
     /*if (permissions == Permissions.public) {
       queryParameters['x-amz-acl'] = 'public-read';
     }*/ // This isn't working ?!
-    http.Request request = new http.Request('PUT', uriBase.replace(queryParameters: queryParameters),
+    http.Request request = new http.Request(
+        'PUT', uriBase.replace(queryParameters: queryParameters),
         headers: new http.Headers());
     if (contentLength != null)
       request.headers.add('Content-Length', contentLength);
-    if (contentType != null)
-      request.headers.add('Content-Type', contentType);
+    if (contentType != null) request.headers.add('Content-Type', contentType);
     if (permissions == Permissions.public) {
       request.headers.add('x-amz-acl', 'public-read');
     }
-    return signRequest(request, contentSha256: contentSha256, expires: expires, preSignedUrl: true);
+    return signRequest(request,
+        contentSha256: contentSha256, expires: expires, preSignedUrl: true);
   }
 }

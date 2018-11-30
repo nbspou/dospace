@@ -1,5 +1,3 @@
-
-
 class ClientException implements Exception {
   final int statusCode;
   final String reasonPhrase;

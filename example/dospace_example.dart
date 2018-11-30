@@ -46,7 +46,8 @@ main() async {
     var input = new File('README.md');
     int contentLength = await input.length();
     Digest contentSha256 = await sha256.bind(input.openRead()).first;
-    String preSignUrl = bucket.preSignUpload('README.md', contentLength: contentLength, contentSha256: contentSha256);
+    String preSignUrl = bucket.preSignUpload('README.md',
+        contentLength: contentLength, contentSha256: contentSha256);
     print('strict upload url: ${preSignUrl}');
     var httpClient = new http.ConsoleClient();
     var httpRequest = new http.Request('PUT', preSignUrl);

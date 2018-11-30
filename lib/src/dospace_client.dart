@@ -34,15 +34,18 @@ class Client {
       @required this.secretKey,
       @required this.service,
       String endpointUrl,
-      http.Client httpClient})
+      @required this.httpClient})
       : this.endpointUrl = (endpointUrl == null)
             ? "https://${region}.digitaloceanspaces.com"
-            : endpointUrl,
-        this.httpClient =
-            httpClient == null ? new http.ConsoleClient() : httpClient {
+            : endpointUrl {
     assert(this.region != null);
     assert(this.accessKey != null);
     assert(this.secretKey != null);
+    assert(this.httpClient != null);
+  }
+
+  Future<void> close() async {
+    await httpClient.close();
   }
 
   @protected
@@ -77,7 +80,8 @@ class Client {
   }
 
   @protected
-  String signRequest(http.Request request, {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
+  String signRequest(http.Request request,
+      {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
     // Build canonical request
     String httpMethod = request.method;
     String canonicalURI = request.uri.path;
@@ -98,7 +102,8 @@ class Client {
     /*dateIso8601 = "20130524T000000Z";
     dateYYYYMMDD = "20130524";
     hashedPayload = null;*/
-    String hashedPayloadStr = contentSha256 == null ? 'UNSIGNED-PAYLOAD' : '$contentSha256';
+    String hashedPayloadStr =
+        contentSha256 == null ? 'UNSIGNED-PAYLOAD' : '$contentSha256';
 
     String credential =
         '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
@@ -108,11 +113,11 @@ class Client {
     if (!preSignedUrl) {
       request.headers.add('x-amz-date', dateIso8601); // Set date in header
       if (contentSha256 != null) {
-        request.headers.add(
-            'x-amz-content-sha256', hashedPayloadStr); // Set payload hash in header
+        request.headers.add('x-amz-content-sha256',
+            hashedPayloadStr); // Set payload hash in header
       }
-      request.headers.keys.forEach(
-          (String name) => (headers[name.toLowerCase()] = request.headers[name]));
+      request.headers.keys.forEach((String name) =>
+          (headers[name.toLowerCase()] = request.headers[name]));
     }
     headers['host'] = [host]; // Host is a builtin header
     List<String> headerNames = headers.keys.toList()..sort();
@@ -124,7 +129,8 @@ class Client {
     String signedHeaders = headerNames.join(';');
 
     // Build canonical query string
-    Map<String, String> queryParameters = new Map<String, String>()..addAll(request.uri.queryParameters);
+    Map<String, String> queryParameters = new Map<String, String>()
+      ..addAll(request.uri.queryParameters);
     if (preSignedUrl) {
       // Add query parameters
       queryParameters['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256';
@@ -136,8 +142,7 @@ class Client {
       }
       queryParameters['X-Amz-SignedHeaders'] = signedHeaders;
     }
-    List<String> queryKeys = queryParameters.keys.toList()
-      ..sort();
+    List<String> queryKeys = queryParameters.keys.toList()..sort();
     String canonicalQueryString = queryKeys
         .map((s) => '${_uriEncode(s)}=${_uriEncode(queryParameters[s])}')
         .join('&');
