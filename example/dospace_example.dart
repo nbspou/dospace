@@ -10,6 +10,7 @@ main() async {
     region: "nyc3",
     accessKey: "7Q7GAFJ4IXHQVLBRXSRX",
     secretKey: "2JLXa9RqPwpavBkC7dt1MHWUDfd6onaXTXTfSYc5eQ0",
+    httpClient: new http.ConsoleClient(),
   );
   for (String name in await spaces.listAllBuckets()) {
     print('bucket: ${name}');
