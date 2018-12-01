@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:meta/meta.dart';
 import 'package:crypto/crypto.dart';
-import 'package:http_client/console.dart' as http;
+import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 
 import 'dospace_client.dart';
@@ -112,6 +111,7 @@ class Bucket extends Client {
   Future<String> uploadFile(
       String key, String filePath, String contentType, Permissions permissions,
       {Map<String, String> meta}) async {
+    /*
     var input = new File(filePath);
     int contentLength = await input.length();
     Digest contentSha256 = await sha256.bind(input.openRead()).first;
@@ -139,6 +139,7 @@ class Bucket extends Client {
     }
     String etag = response.headers['etag'].first;
     return etag;
+    */
   }
 
   /// Uploads data from memory. Returns Etag.
@@ -149,28 +150,27 @@ class Bucket extends Client {
     Digest contentSha256_ =
         contentSha256 != null ? contentSha256 : await sha256.convert(data);
     String uriStr = endpointUrl + '/' + key;
-    http.Request request = new http.Request('PUT', Uri.parse(uriStr),
-        headers: new http.Headers(), body: data);
+    http.Request request = new http.Request('PUT', Uri.parse(uriStr));
+    request.bodyBytes = data;
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
-        request.headers.add("x-amz-meta-${me.key}", me.value);
+        request.headers["x-amz-meta-${me.key}"] = me.value;
       }
     }
     if (permissions == Permissions.public) {
-      request.headers.add('x-amz-acl', 'public-read');
+      request.headers['x-amz-acl'] = 'public-read';
     }
-    request.headers.add('Content-Length', contentLength);
-    request.headers.add('Content-Type', contentType);
+    request.headers['Content-Length'] = contentLength.toString();
+    request.headers['Content-Type'] = contentType;
     signRequest(request, contentSha256: contentSha256_);
-    http.Response response = await httpClient.send(request);
-    BytesBuilder builder = new BytesBuilder(copy: false);
-    await response.body.forEach(builder.add);
-    String body = utf8.decode(builder.toBytes()); // Should be empty when OK
+    http.StreamedResponse response = await httpClient.send(request);
+    String body =
+        await utf8.decodeStream(response.stream); // Should be empty when OK
     if (response.statusCode != 200) {
-      throw new ClientException(response.statusCode, response.reasonPhrase,
-          response.headers.toSimpleMap(), body);
+      throw new ClientException(
+          response.statusCode, response.reasonPhrase, response.headers, body);
     }
-    String etag = response.headers['etag'].first;
+    String etag = response.headers['etag'];
     return etag;
   }
 
@@ -193,13 +193,12 @@ class Bucket extends Client {
       queryParameters['x-amz-acl'] = 'public-read';
     }*/ // This isn't working ?!
     http.Request request = new http.Request(
-        'PUT', uriBase.replace(queryParameters: queryParameters),
-        headers: new http.Headers());
+        'PUT', uriBase.replace(queryParameters: queryParameters));
     if (contentLength != null)
-      request.headers.add('Content-Length', contentLength);
-    if (contentType != null) request.headers.add('Content-Type', contentType);
+      request.headers['Content-Length'] = contentLength.toString();
+    if (contentType != null) request.headers['Content-Type'] = contentType;
     if (permissions == Permissions.public) {
-      request.headers.add('x-amz-acl', 'public-read');
+      request.headers['x-amz-acl'] = 'public-read';
     }
     return signRequest(request,
         contentSha256: contentSha256, expires: expires, preSignedUrl: true);

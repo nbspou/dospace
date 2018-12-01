@@ -3,14 +3,18 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dospace/dospace.dart' as dospace;
-import 'package:http_client/console.dart' as http;
+import 'package:http/http.dart' as http;
+
+const String region = "nyc3";
+const String accessKey = "";
+const String secretKey = "";
+const String bucketName = "";
 
 main() async {
   dospace.Spaces spaces = new dospace.Spaces(
-    region: "nyc3",
-    accessKey: "7Q7GAFJ4IXHQVLBRXSRX",
-    secretKey: "2JLXa9RqPwpavBkC7dt1MHWUDfd6onaXTXTfSYc5eQ0",
-    httpClient: new http.ConsoleClient(),
+    region: region,
+    accessKey: accessKey,
+    secretKey: secretKey,
   );
   for (String name in await spaces.listAllBuckets()) {
     print('bucket: ${name}');
@@ -20,7 +24,7 @@ main() async {
       print('key: ${content.key}');
     }
   }
-  dospace.Bucket bucket = spaces.bucket('example');
+  dospace.Bucket bucket = spaces.bucket(bucketName);
   String etag = await bucket.uploadFile(
       'README.md', 'README.md', 'text/plain', dospace.Permissions.public);
   print('upload: $etag');
@@ -32,14 +36,13 @@ main() async {
   {
     String preSignUrl = bucket.preSignUpload('README.md');
     print('upload url: ${preSignUrl}');
-    var httpClient = new http.ConsoleClient();
-    var httpRequest = new http.Request('PUT', preSignUrl);
-    http.Response httpResponse = await httpClient.send(httpRequest);
-    BytesBuilder builder = new BytesBuilder(copy: false);
-    await httpResponse.body.forEach(builder.add);
-    String body = utf8.decode(builder.toBytes());
+    var httpClient = new http.Client();
+    var httpRequest = new http.Request('PUT', Uri.parse(preSignUrl));
+    http.StreamedResponse httpResponse = await httpClient.send(httpRequest);
+    String body = await utf8.decodeStream(httpResponse.stream);
     print('${httpResponse.statusCode} ${httpResponse.reasonPhrase}');
     print(body);
+    await httpClient.close();
   }
 
   // Pre-signed upload with specific payload
@@ -50,14 +53,13 @@ main() async {
     String preSignUrl = bucket.preSignUpload('README.md',
         contentLength: contentLength, contentSha256: contentSha256);
     print('strict upload url: ${preSignUrl}');
-    var httpClient = new http.ConsoleClient();
-    var httpRequest = new http.Request('PUT', preSignUrl);
-    http.Response httpResponse = await httpClient.send(httpRequest);
-    BytesBuilder builder = new BytesBuilder(copy: false);
-    await httpResponse.body.forEach(builder.add);
-    String body = utf8.decode(builder.toBytes());
+    var httpClient = new http.Client();
+    var httpRequest = new http.Request('PUT', Uri.parse(preSignUrl));
+    http.StreamedResponse httpResponse = await httpClient.send(httpRequest);
+    String body = await utf8.decodeStream(httpResponse.stream);
     print('${httpResponse.statusCode} ${httpResponse.reasonPhrase}');
     print(body);
+    await httpClient.close();
   }
 
   print('done');

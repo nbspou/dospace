@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:meta/meta.dart';
-import 'package:http_client/console.dart' as http;
+import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 
 import 'dospace_client.dart';
@@ -53,8 +53,8 @@ class Spaces extends Client {
   }
 
   String preSignListAllBuckets() {
-    http.Request request = new http.Request('GET', Uri.parse(endpointUrl + '/'),
-        headers: new http.Headers());
+    http.Request request =
+        new http.Request('GET', Uri.parse(endpointUrl + '/'));
     return signRequest(request, preSignedUrl: true);
   }
 }

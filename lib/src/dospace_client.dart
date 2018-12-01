@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:crypto/crypto.dart';
-import 'package:http_client/console.dart' as http;
+import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 
 class ClientException implements Exception {
@@ -34,14 +33,13 @@ class Client {
       @required this.secretKey,
       @required this.service,
       String endpointUrl,
-      @required this.httpClient})
-      : this.endpointUrl = (endpointUrl == null)
-            ? "https://${region}.digitaloceanspaces.com"
-            : endpointUrl {
+      http.Client httpClient})
+      : this.endpointUrl =
+            endpointUrl ?? "https://${region}.digitaloceanspaces.com",
+        this.httpClient = httpClient ?? new http.Client() {
     assert(this.region != null);
     assert(this.accessKey != null);
     assert(this.secretKey != null);
-    assert(this.httpClient != null);
   }
 
   Future<void> close() async {
@@ -50,16 +48,13 @@ class Client {
 
   @protected
   Future<xml.XmlDocument> getUri(Uri uri) async {
-    http.Request request =
-        new http.Request('GET', uri, headers: new http.Headers());
+    http.Request request = new http.Request('GET', uri);
     signRequest(request);
-    http.Response response = await httpClient.send(request);
-    BytesBuilder builder = new BytesBuilder(copy: false);
-    await response.body.forEach(builder.add);
-    String body = utf8.decode(builder.toBytes());
+    http.StreamedResponse response = await httpClient.send(request);
+    String body = await utf8.decodeStream(response.stream);
     if (response.statusCode != 200) {
-      throw new ClientException(response.statusCode, response.reasonPhrase,
-          response.headers.toSimpleMap(), body);
+      throw new ClientException(
+          response.statusCode, response.reasonPhrase, response.headers, body);
     }
     xml.XmlDocument doc = xml.parse(body);
     return doc;
@@ -84,8 +79,8 @@ class Client {
       {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
     // Build canonical request
     String httpMethod = request.method;
-    String canonicalURI = request.uri.path;
-    String host = request.uri.host;
+    String canonicalURI = request.url.path;
+    String host = request.url.host;
     // String service = 's3';
 
     DateTime date = new DateTime.now().toUtc();
@@ -99,9 +94,9 @@ class Client {
         date.month.toString().padLeft(2, '0') +
         date.day.toString().padLeft(2, '0');
 
-    /*dateIso8601 = "20130524T000000Z";
-    dateYYYYMMDD = "20130524";
-    hashedPayload = null;*/
+    // dateIso8601 = "20130524T000000Z";
+    // dateYYYYMMDD = "20130524";
+    // hashedPayload = null;
     String hashedPayloadStr =
         contentSha256 == null ? 'UNSIGNED-PAYLOAD' : '$contentSha256';
 
@@ -109,28 +104,26 @@ class Client {
         '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
 
     // Build canonical headers string
-    Map<String, List<String>> headers = new Map<String, List<String>>();
+    Map<String, String> headers = new Map<String, String>();
     if (!preSignedUrl) {
-      request.headers.add('x-amz-date', dateIso8601); // Set date in header
+      request.headers['x-amz-date'] = dateIso8601; // Set date in header
       if (contentSha256 != null) {
-        request.headers.add('x-amz-content-sha256',
-            hashedPayloadStr); // Set payload hash in header
+        request.headers['x-amz-content-sha256'] =
+            hashedPayloadStr; // Set payload hash in header
       }
       request.headers.keys.forEach((String name) =>
           (headers[name.toLowerCase()] = request.headers[name]));
     }
-    headers['host'] = [host]; // Host is a builtin header
+    headers['host'] = host; // Host is a builtin header
     List<String> headerNames = headers.keys.toList()..sort();
-    String canonicalHeaders = headerNames
-        .map((s) =>
-            (headers[s].map((v) => ('${s}:${_trimAll(v)}')).join('\n') + '\n'))
-        .join();
+    String canonicalHeaders =
+        headerNames.map((s) => '${s}:${_trimAll(headers[s])}' + '\n').join();
 
     String signedHeaders = headerNames.join(';');
 
     // Build canonical query string
     Map<String, String> queryParameters = new Map<String, String>()
-      ..addAll(request.uri.queryParameters);
+      ..addAll(request.url.queryParameters);
     if (preSignedUrl) {
       // Add query parameters
       queryParameters['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256';
@@ -177,12 +170,12 @@ class Client {
         new Hmac(sha256, signingKey.bytes).convert(utf8.encode(stringToSign));
 
     // Set signature in header
-    request.headers.add('Authorization',
-        'AWS4-HMAC-SHA256 Credential=${credential}, SignedHeaders=${signedHeaders}, Signature=$signature');
+    request.headers['Authorization'] =
+        'AWS4-HMAC-SHA256 Credential=${credential}, SignedHeaders=${signedHeaders}, Signature=$signature';
 
     if (preSignedUrl) {
       queryParameters['X-Amz-Signature'] = '$signature';
-      return request.uri.replace(queryParameters: queryParameters).toString();
+      return request.url.replace(queryParameters: queryParameters).toString();
     } else {
       return null;
     }

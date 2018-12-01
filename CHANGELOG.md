@@ -1,3 +1,8 @@
+## 0.12.11
+
+- Switch from `http_client` package to `http` package
+- Web compatibility
+
 ## 0.11.9
 
 - Require passing an HTTP Client in the constructor
