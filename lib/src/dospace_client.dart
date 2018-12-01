@@ -75,7 +75,7 @@ class Client {
   }
 
   @protected
-  String signRequest(http.Request request,
+  String signRequest(http.BaseRequest request,
       {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
     // Build canonical request
     String httpMethod = request.method;

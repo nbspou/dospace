@@ -109,37 +109,35 @@ class Bucket extends Client {
 
   /// Uploads file. Returns Etag.
   Future<String> uploadFile(
-      String key, String filePath, String contentType, Permissions permissions,
+      String key, dynamic file, String contentType, Permissions permissions,
       {Map<String, String> meta}) async {
-    /*
-    var input = new File(filePath);
-    int contentLength = await input.length();
-    Digest contentSha256 = await sha256.bind(input.openRead()).first;
+    int contentLength = await file.length();
+    Digest contentSha256 = await sha256.bind(file.openRead()).first;
     String uriStr = endpointUrl + '/' + key;
-    http.Request request = new http.Request('PUT', Uri.parse(uriStr),
-        headers: new http.Headers(), body: input.openRead());
+    http.StreamedRequest request =
+        new http.StreamedRequest('PUT', Uri.parse(uriStr));
+    Stream<List<int>> stream = file.openRead();
+    stream.listen(request.sink.add,
+        onError: request.sink.addError, onDone: request.sink.close);
     if (meta != null) {
       for (MapEntry<String, String> me in meta.entries) {
-        request.headers.add("x-amz-meta-${me.key}", me.value);
+        request.headers["x-amz-meta-${me.key}"] = me.value;
       }
     }
     if (permissions == Permissions.public) {
-      request.headers.add('x-amz-acl', 'public-read');
+      request.headers['x-amz-acl'] = 'public-read';
     }
-    request.headers.add('Content-Length', contentLength);
-    request.headers.add('Content-Type', contentType);
+    request.headers['Content-Length'] = contentLength.toString();
+    request.headers['Content-Type'] = contentType;
     signRequest(request, contentSha256: contentSha256);
-    http.Response response = await httpClient.send(request);
-    BytesBuilder builder = new BytesBuilder(copy: false);
-    await response.body.forEach(builder.add);
-    String body = utf8.decode(builder.toBytes()); // Should be empty when OK
+    http.StreamedResponse response = await httpClient.send(request);
+    String body = await utf8.decodeStream(response.stream);
     if (response.statusCode != 200) {
-      throw new ClientException(response.statusCode, response.reasonPhrase,
-          response.headers.toSimpleMap(), body);
+      throw new ClientException(
+          response.statusCode, response.reasonPhrase, response.headers, body);
     }
-    String etag = response.headers['etag'].first;
+    String etag = response.headers['etag'];
     return etag;
-    */
   }
 
   /// Uploads data from memory. Returns Etag.
