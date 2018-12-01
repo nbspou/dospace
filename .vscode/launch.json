@@ -4,11 +4,18 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "DOSpace Example",
             "program": "example/dospace_example.dart",
             "request": "launch",
             "type": "dart"
-        }
+        },
+        {
+            "name": "DOSpace Test",
+            "program": "test/dospace_test.dart",
+            "request": "launch",
+            "type": "dart"
+        },
     ]
 }
