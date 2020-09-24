@@ -39,6 +39,26 @@ class Bucket extends Client {
     }
   }
 
+  /// Delete an object
+  /// https://developers.digitalocean.com/documentation/spaces/#delete-object
+  Future<bool> deleteFile(String path) async {
+    String uriStr = endpointUrl + '/' + path;
+    http.Request request = new http.Request('DELETE', Uri.parse(uriStr));
+    request.headers['Content-Type'] = "application/json";
+    signRequest(request);
+
+    http.StreamedResponse response = await httpClient.send(request);
+    String body = await utf8.decodeStream(response.stream);
+
+    // "204 No Content" means the object was deleted (success)
+    if (response.statusCode != 204) {
+      throw new ClientException(
+          response.statusCode, response.reasonPhrase, response.headers, body);
+    }
+
+    return Future<bool>.value(true);
+  }
+
   /// List the Bucket's Contents.
   /// https://developers.digitalocean.com/documentation/spaces/#list-bucket-contents
   Stream<BucketContent> listContents(
