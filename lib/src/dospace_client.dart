@@ -56,7 +56,7 @@ class Client {
       throw new ClientException(
           response.statusCode, response.reasonPhrase, response.headers, body);
     }
-    xml.XmlDocument doc = xml.parse(body);
+    xml.XmlDocument doc = xml.XmlDocument.parse(body);
     return doc;
   }
 

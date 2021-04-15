@@ -1,3 +1,7 @@
+## 0.12.13
+- Upgrade packages
+- Correct deprecated methods
+
 ## 0.12.11
 
 - Switch from `http_client` package to `http` package
