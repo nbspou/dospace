@@ -1,3 +1,7 @@
+## 0.13.15
+
+- Update to null safety
+
 ## 0.12.11
 
 - Switch from `http_client` package to `http` package
