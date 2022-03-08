@@ -8,11 +8,11 @@ import 'dospace_bucket.dart';
 
 class Spaces extends Client {
   Spaces(
-      {@required String region,
-      @required String accessKey,
-      @required String secretKey,
-      String endpointUrl,
-      http.Client httpClient})
+      {required String? region,
+      required String? accessKey,
+      required String? secretKey,
+      String? endpointUrl,
+      http.Client? httpClient})
       : super(
             region: region,
             accessKey: accessKey,
@@ -23,7 +23,7 @@ class Spaces extends Client {
     // ...
   }
 
-  Bucket bucket(String bucket) {
+  Bucket bucket(String? bucket) {
     if (endpointUrl == "https://${region}.digitaloceanspaces.com") {
       return new Bucket(
           region: region,
@@ -52,7 +52,7 @@ class Spaces extends Client {
     return res;
   }
 
-  String preSignListAllBuckets() {
+  String? preSignListAllBuckets() {
     http.Request request =
         new http.Request('GET', Uri.parse(endpointUrl + '/'));
     return signRequest(request, preSignedUrl: true);

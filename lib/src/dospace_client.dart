@@ -7,7 +7,7 @@ import 'package:xml/xml.dart' as xml;
 
 class ClientException implements Exception {
   final int statusCode;
-  final String reasonPhrase;
+  final String? reasonPhrase;
   final Map<String, String> responseHeaders;
   final String responseBody;
   const ClientException(this.statusCode, this.reasonPhrase,
@@ -18,9 +18,9 @@ class ClientException implements Exception {
 }
 
 class Client {
-  final String region;
-  final String accessKey;
-  final String secretKey;
+  final String? region;
+  final String? accessKey;
+  final String? secretKey;
   final String service;
   final String endpointUrl;
 
@@ -28,12 +28,12 @@ class Client {
   final http.Client httpClient;
 
   Client(
-      {@required this.region,
-      @required this.accessKey,
-      @required this.secretKey,
-      @required this.service,
-      String endpointUrl,
-      http.Client httpClient})
+      {required this.region,
+      required this.accessKey,
+      required this.secretKey,
+      required this.service,
+      String? endpointUrl,
+      http.Client? httpClient})
       : this.endpointUrl =
             endpointUrl ?? "https://${region}.digitaloceanspaces.com",
         this.httpClient = httpClient ?? new http.Client() {
@@ -43,7 +43,7 @@ class Client {
   }
 
   Future<void> close() async {
-    await httpClient.close();
+    httpClient.close();
   }
 
   @protected
@@ -75,8 +75,8 @@ class Client {
   }
 
   @protected
-  String signRequest(http.BaseRequest request,
-      {Digest contentSha256, bool preSignedUrl = false, int expires = 86400}) {
+  String? signRequest(http.BaseRequest request,
+      {Digest? contentSha256, bool preSignedUrl = false, int expires = 86400}) {
     // Build canonical request
     String httpMethod = request.method;
     String canonicalURI = request.url.path;
@@ -104,7 +104,7 @@ class Client {
         '${accessKey}/${dateYYYYMMDD}/${region}/${service}/aws4_request';
 
     // Build canonical headers string
-    Map<String, String> headers = new Map<String, String>();
+    Map<String, String?> headers = new Map<String, String?>();
     if (!preSignedUrl) {
       request.headers['x-amz-date'] = dateIso8601; // Set date in header
       if (contentSha256 != null) {
@@ -117,7 +117,7 @@ class Client {
     headers['host'] = host; // Host is a builtin header
     List<String> headerNames = headers.keys.toList()..sort();
     String canonicalHeaders =
-        headerNames.map((s) => '${s}:${_trimAll(headers[s])}' + '\n').join();
+        headerNames.map((s) => '${s}:${_trimAll(headers[s]!)}' + '\n').join();
 
     String signedHeaders = headerNames.join(';');
 
@@ -137,7 +137,7 @@ class Client {
     }
     List<String> queryKeys = queryParameters.keys.toList()..sort();
     String canonicalQueryString = queryKeys
-        .map((s) => '${_uriEncode(s)}=${_uriEncode(queryParameters[s])}')
+        .map((s) => '${_uriEncode(s)}=${_uriEncode(queryParameters[s]!)}')
         .join('&');
 
     if (preSignedUrl) {
@@ -160,7 +160,7 @@ class Client {
     Digest dateKey = new Hmac(sha256, utf8.encode("AWS4${secretKey}"))
         .convert(utf8.encode(dateYYYYMMDD));
     Digest dateRegionKey =
-        new Hmac(sha256, dateKey.bytes).convert(utf8.encode(region));
+        new Hmac(sha256, dateKey.bytes).convert(utf8.encode(region!));
     Digest dateRegionServiceKey =
         new Hmac(sha256, dateRegionKey.bytes).convert(utf8.encode(service));
     Digest signingKey = new Hmac(sha256, dateRegionServiceKey.bytes)
