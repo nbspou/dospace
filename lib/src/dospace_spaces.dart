@@ -8,11 +8,11 @@ import 'dospace_bucket.dart';
 
 class Spaces extends Client {
   Spaces(
-      {@required String region,
-      @required String accessKey,
-      @required String secretKey,
-      String endpointUrl,
-      http.Client httpClient})
+      {required String? region,
+      required String? accessKey,
+      required String? secretKey,
+      String? endpointUrl,
+      http.Client? httpClient})
       : super(
             region: region,
             accessKey: accessKey,
@@ -23,7 +23,7 @@ class Spaces extends Client {
     // ...
   }
 
-  Bucket bucket(String bucket) {
+  Bucket bucket(String? bucket) {
     if (endpointUrl == "https://${region}.digitaloceanspaces.com") {
       return new Bucket(
           region: region,
@@ -39,7 +39,7 @@ class Spaces extends Client {
 
   Future<List<String>> listAllBuckets() async {
     xml.XmlDocument doc = await getUri(Uri.parse(endpointUrl + '/'));
-    List<String> res = new List<String>();
+    List<String> res = new List<String>.empty(growable: true);
     for (xml.XmlElement root in doc.findElements('ListAllMyBucketsResult')) {
       for (xml.XmlElement buckets in root.findElements('Buckets')) {
         for (xml.XmlElement bucket in buckets.findElements('Bucket')) {
@@ -52,7 +52,7 @@ class Spaces extends Client {
     return res;
   }
 
-  String preSignListAllBuckets() {
+  String? preSignListAllBuckets() {
     http.Request request =
         new http.Request('GET', Uri.parse(endpointUrl + '/'));
     return signRequest(request, preSignedUrl: true);

@@ -25,7 +25,7 @@ main() async {
     }
   }
   dospace.Bucket bucket = spaces.bucket(bucketName);
-  String etag = await bucket.uploadFile(
+  String? etag = await bucket.uploadFile(
       'README.md', 'README.md', 'text/plain', dospace.Permissions.public);
   print('upload: $etag');
 
@@ -34,7 +34,7 @@ main() async {
 
   // Basic pre-signed upload
   {
-    String preSignUrl = bucket.preSignUpload('README.md');
+    String preSignUrl = bucket.preSignUpload('README.md')!;
     print('upload url: ${preSignUrl}');
     var httpClient = new http.Client();
     var httpRequest = new http.Request('PUT', Uri.parse(preSignUrl));
@@ -42,7 +42,7 @@ main() async {
     String body = await utf8.decodeStream(httpResponse.stream);
     print('${httpResponse.statusCode} ${httpResponse.reasonPhrase}');
     print(body);
-    await httpClient.close();
+    httpClient.close();
   }
 
   // Pre-signed upload with specific payload
@@ -51,7 +51,7 @@ main() async {
     int contentLength = await input.length();
     Digest contentSha256 = await sha256.bind(input.openRead()).first;
     String preSignUrl = bucket.preSignUpload('README.md',
-        contentLength: contentLength, contentSha256: contentSha256);
+        contentLength: contentLength, contentSha256: contentSha256)!;
     print('strict upload url: ${preSignUrl}');
     var httpClient = new http.Client();
     var httpRequest = new http.Request('PUT', Uri.parse(preSignUrl));
@@ -59,7 +59,7 @@ main() async {
     String body = await utf8.decodeStream(httpResponse.stream);
     print('${httpResponse.statusCode} ${httpResponse.reasonPhrase}');
     print(body);
-    await httpClient.close();
+    httpClient.close();
   }
 
   print('done');
