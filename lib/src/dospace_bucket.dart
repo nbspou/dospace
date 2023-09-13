@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:meta/meta.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
@@ -63,11 +62,11 @@ class Bucket extends Client {
             xml.XmlElement ele = node;
             switch ('${ele.name}') {
               case "NextMarker":
-                marker = ele.text;
+                marker = ele.value;
                 break;
               case "IsTruncated":
                 isTruncated =
-                    ele.text.toLowerCase() != "false" && ele.text != "0";
+                    (ele.value ?? 'false').toLowerCase() != "false" && ele.value != "0";
                 break;
               case "Contents":
                 String? key;
@@ -79,16 +78,16 @@ class Bucket extends Client {
                     xml.XmlElement ele = node;
                     switch ('${ele.name}') {
                       case "Key":
-                        key = ele.text;
+                        key = ele.value;
                         break;
                       case "LastModified":
-                        lastModifiedUtc = DateTime.parse(ele.text);
+                        lastModifiedUtc = DateTime.parse(ele.value ?? '');
                         break;
                       case "ETag":
-                        eTag = ele.text;
+                        eTag = ele.value;
                         break;
                       case "Size":
-                        size = int.parse(ele.text);
+                        size = int.parse(ele.value ?? '');
                         break;
                     }
                   }

@@ -1,5 +1,3 @@
-import 'package:meta/meta.dart';
-
 class BucketContent {
   /// The object's key.
   final String? key;

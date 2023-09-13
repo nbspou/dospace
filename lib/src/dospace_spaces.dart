@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 
@@ -44,7 +43,7 @@ class Spaces extends Client {
       for (xml.XmlElement buckets in root.findElements('Buckets')) {
         for (xml.XmlElement bucket in buckets.findElements('Bucket')) {
           for (xml.XmlElement name in bucket.findElements('Name')) {
-            res.add(name.text);
+            res.add(name.value??'');
           }
         }
       }
